@@ -25,4 +25,5 @@ Learning Objectives
 - Parse each row into a MarketDataPoint and collect them in a list.1
 
 2. Mutable Order Management
+- Implement an Order class with mutable attributes: symbol, quantity, price, and status.
 
