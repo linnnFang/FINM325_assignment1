@@ -16,3 +16,11 @@ Learning Objectives
 
 # Task Specifications
 
+1. Data Ingestion & Immutable Types
+
+- Read market_data.csv (columns: timestamp, symbol, price) using the built-in csv module.
+
+- Define a frozen dataclass MarketDataPoint with attributes timestamp (datetime), symbol (str), and price (float).
+
+- Parse each row into a MarketDataPoint and collect them in a list.1
+
