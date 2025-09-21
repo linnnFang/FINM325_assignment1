@@ -58,3 +58,4 @@ class MarketDataReader:
 
     def fetch_data(self):
         return self.data_list
+
