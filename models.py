@@ -1,156 +1,96 @@
-''''
-models.py (dataclasses, Order, exceptions)
 
-----------------------------------------------------------------------------
-Mutable Order Management
-Implement an Order class with mutable attributes: symbol, quantity, price, and status.
-Demonstrate in a unit test that you can update Order.status but not MarketDataPoint.price.
-
-class OrderError(Exception)
-class MarketDataPoint
-class Order
-class TestOrderAndMarketData(unittest.TestCase)
-class MarketDataContainer:
-
-----------------------------------------------------------------------------
-Exception Handling
-
-Define custom exceptions:
-
-class OrderError(Exception): pass
-class ExecutionError(Exception): pass
-Raise OrderError for invalid orders (e.g., zero or negative quantity).
-In the execution engine, simulate occasional failures and raise ExecutionError; catch and log these errors to continue processing.
-'''
-
-import unittest
-from dataclasses import FrozenInstanceError
+from __future__ import annotations
 from dataclasses import dataclass
-import datetime as datetime
-# Exception Handling
-class OrderError(Exception): 
-    def __init__(self,error):
-        super().__init__("This order is not valid")
-class ExecutionError(Exception): pass
+from datetime import datetime
+from typing import Dict, List, Tuple, Optional
 
+# ---------------- Exceptions ----------------
+class OrderError(Exception):
+    pass
 
-# define frozen data class
-#immutable
-@dataclass(frozen = True)
+class ExecutionError(Exception):
+    pass
+
+# ---------------- Core types ----------------
+@dataclass(frozen=True)
 class MarketDataPoint:
-    timestamp : datetime.datetime
-    symbol : str
+    timestamp: datetime
+    symbol: str
     price: float
 
-
-#mutable
+@dataclass
 class Order:
-    def __init__(self,symbol:str,quantity:int ,price:float,side:str,status:str):
-        self.symbol = symbol
-        self.quantity = quantity # validate via setter
-        self.price = price # validate via setter
-        self.side = side
-        self.status = status
+    side: str                  # "BUY" | "SELL"
+    symbol: str
+    quantity: int
+    price: float
+    timestamp: datetime
+    status: str = "NEW"        # "NEW" -> "FILLED"/"REJECTED"
 
-    @property
-    def price(self):
-        return self.price
-    
-    @price.setter
-    def price(self,value):
-        if value < 0:
-            raise OrderError("Price cannot be negative")
-        self.price = value
+    def validate(self) -> None:
+        s = self.side.upper()
+        if s not in {"BUY","SELL"}:
+            raise OrderError(f"Invalid side: {self.side}")
+        if self.quantity <= 0:
+            raise OrderError("Quantity must be > 0")
+        if self.price <= 0:
+            raise OrderError("Price must be > 0")
+        if not self.symbol:
+            raise OrderError("Symbol is required")
+        self.side = s
 
-    @property
-    def quantity(self):
-        return self.quantity
-    @quantity.setter
-    def quantity(self, v: int):
-        if v <= 0:
-            raise OrderError("quantity must be > 0")
-        self._quantity = int(v)
-
-    @property
-    def value(self):
-        return self.price* self.quantity
-    
-    def __str__(self):
-        return f"{self.quantity} shares of {self.symbol} at ${self.price:.2f}"
-    
-    def __repr__(self):
-        return f"Order('{self.symbol}',{self.quantity},{self.price})"
-
-
-
-# unit test
-'''
-(maybe deleted later)
-'''
-class TestOrderAndMarketData(unittest.TestCase):
-    def test_mutable_order(self):
-        order = Order("AAPL", 10, 150.0,"bid","NEW")
-        self.assertEqual(order.status, "NEW")
-        order.status = "FILLED"
-        self.assertEqual(order.status, "FILLED")
-
-    def test_immutable_marketdatapoint(self):
-        point = MarketDataPoint(datetime.datetime.now(), "AAPL", 150.0)
-        with self.assertRaises(FrozenInstanceError):
-            point.price = 200.0
-
+# ---------------- Containers for Data & Signals ----------------
 class MarketDataContainer:
-    def __init__(self):
-        self.buffer = []
-        self.all_positions = {}
-        self.trade_signal = []
+    """
+    - Buffer incoming MarketDataPoint instances in a list (self.buffer)
+    - Store open positions as {'SYM': {'quantity': int, 'avg_price': float}}
+    - Collect signals as a list of tuples (action, symbol, qty, price)
+    """
+    def __init__(self) -> None:
+        self.buffer: List[MarketDataPoint] = []
+        self.positions: Dict[str, Dict[str, float]] = {}
+        self.signals: List[Tuple[str, str, int, float]] = []
 
-    def buffer_data(self, data_point):
+    def buffer_data(self, data_point: MarketDataPoint) -> None:
         self.buffer.append(data_point)
 
-    def add_trade_signal(self, action, symbol, quantity, price):
-        self.trade_signal.append((action, symbol, quantity, price))
+    def last(self) -> Optional[MarketDataPoint]:
+        return self.buffer[-1] if self.buffer else None
 
-    def calculate_average_price(self, position):
-        if position["total_shares"] > 0:
-            position["average_price"] = position["total_cost"] / position["total_shares"]
-        else:
-            position["average_price"] = 0.0
+    def recent(self, n: int):
+        return self.buffer[-n:] if n > 0 else []
 
-    def update_position(self, order):
-        symbol = order['symbol']
-        side = str(order['side']).upper()
-        quantity = int(order['quantity'])
-        price = float(order['price'])
+    def __len__(self) -> int:
+        return len(self.buffer)
 
-        if symbol not in self.all_positions:
-            self.all_positions[symbol] = {
-                "total_shares": 0,
-                "total_cost": 0.0,
-                "average_price": 0.0
-            }
-        position = self.all_positions[symbol]
+    def __iter__(self):
+        return iter(self.buffer)
 
-        if side == "BUY":
-            position["total_shares"] += quantity
-            position["total_cost"] += price * quantity
-            self.calculate_average_price(position)
+    # position
+    def _ensure_pos(self, symbol: str) -> Dict[str, float]:
+        if symbol not in self.positions:
+            self.positions[symbol] = {"quantity": 0, "avg_price": 0.0}
+        return self.positions[symbol]
 
-        elif side == "SELL":
-            sell_quantity = min(quantity, position["total_shares"])
-            if quantity > position["total_shares"]:
-                print(f"CANNOT OVERSELL! Currently have shares: {position['total_shares']}. But wanted to sell {quantity}. PROCEED with selling {sell_quantity} shares.")
+    def apply_fill(self, order: Order) -> None:
+        pos = self._ensure_pos(order.symbol)
+        q = int(order.quantity)
+        px = float(order.price)
 
-            position["total_shares"] -= sell_quantity
-            position["total_cost"] -= position["average_price"] * sell_quantity
-            if position["total_shares"] <= 0:
-                position["total_cost"] = 0.0
-                position["average_price"] = 0.0
-            self.calculate_average_price(position)
+        if order.side == "BUY":
+            old_q = pos["quantity"]
+            new_q = old_q + q
+            pos["avg_price"] = (pos["avg_price"] * old_q + px * q) / new_q if new_q > 0 else 0.0
+            pos["quantity"] = new_q
+        elif order.side == "SELL":
+            sell_q = min(q, pos["quantity"])
+            pos["quantity"] -= sell_q
+            if pos["quantity"] == 0:
+                pos["avg_price"] = 0.0
 
-    def fetch_current_position(self, symbol):
-        return self.all_positions.get(symbol, {
-            "total_shares": 0,
-            "total_cost": 0.0,
-            "average_price": 0.0
-        })
+    # signal
+    def add_signal(self, action: str, symbol: str, qty: int, price: float) -> None:
+        self.signals.append((action, symbol, qty, price))
+
+    def clear_signals(self) -> None:
+        self.signals.clear()
