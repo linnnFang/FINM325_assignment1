@@ -1,18 +1,19 @@
-# FINM325_assignment1
-for assignment
+# FINM325 Assignment 1: CSV-Based Algorithmic Trading Backtester
+## Authors: Simon Guo, Lin Fang, Roxxane Wang, Victor Ji
 
-Learning Objectives
-- Parse CSV data into immutable dataclass instances.
+## Setup Instructions:
+1. Create and activate the environment for this backtester:
+```bash
+conda create -n finm python=3.13.5
+conda activate finm
+```
 
-- Distinguish and use mutable classes for order management.
+2. Install package dependencies
+```bash
+conda install numpy pandas matplotlib ipykernal
+```
 
-- Build an abstract Strategy interface with concrete subclasses.
 
-- Manage time-series data and portfolio state using lists and dictionaries.
-
-- Define custom exceptions and handle errors without stopping the backtest.
-
-- Generate a Markdown report summarizing key performance metrics.
 
 # Task Specifications
 
