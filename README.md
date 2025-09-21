@@ -1,6 +1,6 @@
 # FINM325 Assignment 1: CSV-Based Algorithmic Trading Backtester
 
-## Authors: Simon Guo, Lin Fang, Roxxane Wang, Victor Ji
+## Authors: Simon Guo, Lin Fang, Roxanne Wang, Victor Ji
 
 ## Project Overview
 In this group project, we built a simple CSV-Based Algorithmic trading backtester, with simulated stock data generated for Apple (ticker symbol: AAPL). We processed the simulated stock price, and applied two popular trading strategies, including the moving average crossover and momentum trading to simulate the investment returns. Last, we analyzed the performance of these two trading strategies.
