@@ -4,14 +4,14 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, List, Tuple, Optional
 
-# ---------------- Exceptions ----------------
+
 class OrderError(Exception):
     pass
 
 class ExecutionError(Exception):
     pass
 
-# ---------------- Core types ----------------
+
 @dataclass(frozen=True)
 class MarketDataPoint:
     timestamp: datetime
@@ -39,7 +39,6 @@ class Order:
             raise OrderError("Symbol is required")
         self.side = s
 
-# ---------------- Containers for Data & Signals ----------------
 class MarketDataContainer:
     """
     - Buffer incoming MarketDataPoint instances in a list (self.buffer)

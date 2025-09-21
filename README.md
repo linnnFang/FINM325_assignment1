@@ -31,10 +31,10 @@ This is the file used to generate the simulated stock data. We downloaded this c
 Reads the simulated `market_data.csv` which includes `timestamp`, `symbol`, `price` using Python's built in `CSV` module and translate each row of raw data into defined `MarketDataPoint` dataclass.
 
 **3. execution_engine.py: <br>**
-(Run backtest loop? like feed `MarketDataClass` to strategy? Update Position? Container?)
+Feeding buffered market data through strategies, turning generated signals into validated orders, executing them against a simulated portfolio, and recording resulting positions, orders, and errors.
 
 **4. models.py: <br>**
-????
+Including `class OrderError(Exception)`,`class ExecutionError(Exception)`,`class MarketDataPoint`,`class Order`,`class MarketDataContainer` , and tracking logic that buffer ticks, collect signals, and update positions
 
 **6. strategies.py: <br>**
 This python file defines two main strategies: moving average crossover and momentum trading. The strategy will generate trading signals from `MarketDataPoint`.
