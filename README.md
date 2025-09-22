@@ -14,7 +14,7 @@ conda activate finm
 
 **2. Install package dependencies:**
 ```bash
-conda install numpy pandas matplotlib ipykernal
+conda install numpy pandas matplotlib
 ```
 
 **3. Cloning:**
